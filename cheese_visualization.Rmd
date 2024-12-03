@@ -1,0 +1,141 @@
+# Data Import and Env Setup
+
+```{r}
+# Variable for storing the main data set
+cheese <- read.csv("./dataset/cheese.csv")
+# Needed libraries
+libs <- c("tidyverse", "ggplot2")
+# Libraries installation
+installed_libs <- libs %in% rownames(installed.packages())
+if (any(installed_libs == FALSE)) {
+    install.packages(libs[!installed_libs])
+}
+# Libraries loading
+library(tidyverse)
+library(ggplot2)
+```
+
+# Data Overview
+
+## Unfiltered, as it comes within the .csv file
+
+```{r}
+cheese
+```
+
+## Cheese Distribution by Country (top 10)
+
+```{r}
+# Data preparation
+## Filtering out NA values and selecting only columns of interest
+by_country <- cheese %>% 
+  filter(!is.na(cheese) & !is.na(country)) %>% 
+  select(cheese, country) %>% 
+## Splitting records for which country column contains multiple values
+  separate_rows(country, sep = ", ") %>% 
+## Selecting unique values
+  distinct(cheese, country) %>% 
+## Grouping and counting
+  group_by(country) %>% 
+  summarise(count = n()) %>% 
+  arrange(count) %>% 
+  tail(n = 10)
+
+by_country
+
+# Plot creation
+by_country_plot <- ggplot(
+    data = by_country,
+    aes(x = count, y = reorder(country, count), fill = country)
+  ) +
+  geom_col() + 
+  labs(
+    title = "Cheese Distribution by Country (top 10)",
+    x = "Cheese count",
+    y = "Countries",
+    fill = "Countries"
+  ) + 
+  theme(axis.text.y = element_blank())
+
+by_country_plot
+```
+
+## Cheese Families in USA Regions (top 10)
+
+```{r}
+# Data preparation
+## Filtering out NA values and selecting only columns of interest
+families_by_region <- cheese %>% 
+  filter(!is.na(family) & !is.na(region) & country == "United States") %>% 
+  select(family, region) %>% 
+  filter(!is.na(region)) %>% 
+  separate_rows(region, sep = ", ") %>% 
+  distinct(family, region) %>% 
+  group_by(region) %>% 
+  summarise(count = n()) %>% 
+  tail(n = 10)
+
+families_by_region
+
+# Plot creation
+families_by_region_plot <- ggplot(
+    data = families_by_region,
+    aes(x = reorder(region, -count), y = count, fill = region)
+  ) +
+  geom_col() + 
+  labs(
+    title = "Cheese Families in USA Regions (top 10)",
+    x = "Regions",
+    y = "Family count",
+    fill = "Regions"
+  ) +
+  theme(axis.text.x = element_blank())
+  
+families_by_region_plot
+```
+
+## Fat Content Distribution (top 10)
+
+```{r}
+#giga_sort <- function(dataset) {
+#  for (elem in dataset) {
+#    if (str_detect(elem, "g")) {
+#      print(elem)
+#    }
+#  }
+#}
+
+# Data preparation
+## Filtering out NA values and selecting only columns of interest
+by_fat_content <- cheese %>% 
+  filter(!is.na(cheese) & !is.na(fat_content)) %>% 
+  select(cheese, fat_content) %>% 
+  #separate_rows(region, sep = ", ") %>% 
+  filter(str_detect(fat_content, "%")) %>% 
+  distinct(cheese, fat_content) %>% 
+  arrange(fat_content) %>% 
+  #giga_sort()
+  #group_by(region) %>% 
+  #summarise(count = n()) %>% 
+  tail(n = 10)
+
+by_fat_content
+
+# Plot creation
+by_fat_content_plot <- ggplot(
+    data = by_fat_content,
+    aes(x = cheese, y = fat_content, fill = cheese)
+  ) +
+  geom_col() + coord_radial(theta = "y")
+  labs(
+    title = "Cheese Families in USA Regions (top 10)",
+    x = "Regions",
+    y = "Family count",
+    fill = "Regions"
+  ) +
+  theme(axis.text.x = element_blank())
+  
+by_fat_content_plot
+```
+
+## Fat Content Distribution (top 10)
