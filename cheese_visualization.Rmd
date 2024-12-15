@@ -158,41 +158,214 @@ by_fat_content_plot
 
 ## Calcium Content vs. Fat Content
 
-A scatter plot to investigate the relationship between calcium content and fat content.
+```{r}
+# Data preparation
+calcium_vs_fat <- cheese %>%
+## Filtering out NA values and selecting only columns of interest
+  filter(!is.na(cheese) & !is.na(fat_content) & !is.na(calcium_content)) %>% 
+  select(cheese, fat_content, calcium_content) %>% 
+  distinct(cheese, fat_content, calcium_content) %>% 
+  mutate(
+    fat_content = ifelse(
+      str_detect(fat_content, "%"),
+      str_replace(fat_content, "%", " g/100g"),
+      fat_content
+    )
+  ) %>%
+  filter(!str_detect(fat_content, "-")) %>% 
+  mutate(
+    fat_content = str_remove(fat_content, " g/100g"),
+    fat_content = as.numeric(fat_content),
+    calcium_content = str_remove(calcium_content, " mg/100g"),
+    calcium_content = as.numeric(calcium_content)
+  )
 
-## Cheese Types and Their Fat Content
+calcium_vs_fat
 
-A boxplot comparing fat content across different cheese types (e.g., fresh, aged).
+# Plot creation
+calcium_vs_fat_plot <- ggplot(
+    data = calcium_vs_fat,
+    aes(x = calcium_content, y = fat_content)
+  ) +
+  geom_point(color = "#999") +
+  labs(
+    x = "Calcium Content (mg/100g)",
+    y = "Fat Content (g/100g)",
+  ) +
+  theme_set +
+  theme(
+    axis.text = element_text(color = "#999"),
+    axis.title = element_text(color = "#999"),
+    panel.grid.minor = element_line(color = "#999", linetype = "dashed")
+  )
+  
+calcium_vs_fat_plot
+```
 
 ## Vegetarian vs. Vegan Cheese Availability
 
-A grouped bar chart comparing the number of vegetarian and vegan cheeses.
+```{r}
+#Data preparation
+vegetarian_vs_vegan <- cheese %>%
+## Filtering out NA values and selecting only columns of interest
+  filter(!is.na(cheese) & !is.na(vegetarian)) %>%
+  select(cheese, vegetarian) %>%
+## Selecting unique values
+  distinct(cheese, vegetarian) %>%
+## Grouping and counting
+  group_by(vegetarian) %>%
+  summarise(count = n()) %>%
+  mutate(vegetarian = ifelse(
+    str_detect(vegetarian, "TRUE"),
+    str_replace(vegetarian, "TRUE", "Vegetarian"),
+    str_replace(vegetarian, "FALSE", "Vegan"))
+  ) %>% 
+## Sorting the data
+  arrange(desc(count))
 
-## Cheese Texture Popularity
+vegetarian_vs_vegan
 
-A bar plot to visualize the frequency of different textures (e.g., soft, hard, crumbly).
+#Plot creation
+vegetarian_vs_vegan_plot <- ggplot(
+    data = vegetarian_vs_vegan,
+    aes(x = "", y = count, fill = reorder(vegetarian, count))
+  ) +
+  geom_col(color = "#444") + coord_polar(theta = "y") +
+  labs(
+    title = "Vegetarian vs Vegan Cheese Availability",
+    fill = "Cheese Type"
+  ) +
+  theme_set + theme(
+    axis.text.x = element_text(color = "#999")
+  )
 
-## Flavor Diversity
+vegetarian_vs_vegan_plot
+```
 
-A word cloud based on the frequency of different flavors listed in the dataset.
+## Cheese Texture Popularity (top 12 textures)
 
-## Top 10 Producers by Cheese Count
+```{r}
+# Data preparation
+by_texture <- cheese %>%
+  filter(!is.na(cheese) & !is.na(texture)) %>%
+  select(cheese, texture) %>% 
+  separate_rows(texture, sep = ", ") %>% 
+  distinct(cheese, texture) %>% 
+  group_by(texture) %>% 
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>% 
+  head(n = 12)
+  
+by_texture
 
-A bar plot highlighting the top producers and the number of cheeses they offer.
+# Plot creation
+by_texture_plot <- ggplot(
+  data = by_texture,
+  aes(x = reorder(texture, -count), y = count, fill = reorder(texture, -count))
+) + geom_col() + 
+labs(
+  title = "Cheese Textures Popularity",
+  fill = "Textures"
+) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
 
-## Regional Flavor Profiles
+by_texture_plot
+```
 
-A heatmap showing the presence of different flavor descriptors (e.g., nutty, tangy) across regions.
+## Flavor Popularity (top 12 flavors)
 
-## Correlation Matrix of Quantitative Variables
+```{r}
+# Data preparation
+by_flavor <- cheese %>%
+  filter(!is.na(cheese) & !is.na(flavor)) %>%
+  select(cheese, flavor) %>% 
+  separate_rows(flavor, sep = ", ") %>% 
+  distinct(cheese, flavor) %>% 
+  group_by(flavor) %>% 
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>% 
+  head(n = 12)
 
-A correlation plot to explore relationships between variables like fat content, calcium content, and texture score.
+by_flavor
+
+# Plot creation
+by_flavor_plot <- ggplot(
+  data = by_flavor,
+  aes(x = reorder(flavor, -count), y = count, fill = reorder(flavor, -count))
+) + geom_col() + 
+labs(
+  title = "Cheese Flavors Popularity",
+  fill = "Flavors"
+) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+
+by_flavor_plot
+```
+
+## Top Producers by Cheese Count
+
+```{r}
+# Data preparation
+by_producers <- cheese %>%
+  filter(!is.na(cheese) & !is.na(producers)) %>%
+  select(cheese, producers) %>% 
+  separate_rows(producers, sep = ", ") %>% 
+  distinct(cheese, producers) %>% 
+  group_by(producers) %>% 
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>% 
+  head(n = 12)
+
+by_producers
+
+# Plot creation
+by_producers_plot <- ggplot(
+  data = by_producers,
+  aes(x = reorder(producers, -count), y = count, fill = reorder(producers, -count))
+) + geom_col() + 
+labs(
+  title = "Top Cheese Producers",
+  fill = "Producers"
+) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+
+by_producers_plot
+```
+
+## Milk Type Usage
+
+```{r}
+# Data preparation
+by_milk <- cheese %>%
+  filter(!is.na(cheese) & !is.na(milk)) %>%
+  select(cheese, milk) %>% 
+  separate_rows(milk, sep = ", ") %>% 
+  distinct(cheese, milk) %>% 
+  group_by(milk) %>% 
+  summarise(count = n()) %>%
+  arrange(desc(count))
+
+by_milk
+
+# Plot creation
+by_milk_plot <- ggplot(
+  data = by_milk,
+  aes(x = reorder(milk, -count), y = count, fill = reorder(milk, -count))
+) + geom_col() + 
+labs(
+  title = "Milk Popularity",
+  fill = "Milk Types"
+) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+
+by_milk_plot
+```
+
+--------------------------------------------------------------------------------------------------------------------
 
 ## Cheese Families Across Countries
 
 A treemap to visualize the distribution of cheese families (e.g., blue, brined) across different countries.
 
-##Seasonal Color Trends If seasonality can be inferred (e.g., seasonal cheeses), use a line plot to show trends in cheese colors over time or seasons.
+## Seasonal Color Trends
+
+If seasonality can be inferred (e.g., seasonal cheeses), use a line plot to show trends in cheese colors over time or seasons.
 
 ## Synonyms and Alternative Spellings
 
@@ -205,10 +378,6 @@ A radar chart (or spider plot) comparing the characteristics (e.g., fat, calcium
 ## Cheese Producers by Country
 
 A faceted bar plot showing the number of producers in each country, with individual facets for each region.
-
-## Milk Type Usage
-
-A stacked bar chart or pie chart displaying the distribution of milk types (e.g., cow, goat, sheep, buffalo) used in cheeses.
 
 ## Rind Type by Cheese Family
 
@@ -241,3 +410,15 @@ A bar chart showing the number of synonyms associated with each cheese, helping 
 ## Textural Diversity by Region
 
 A bar chart or boxplot to compare the diversity of textures (e.g., soft, hard, crumbly) across different regions.
+
+## Cheese Types and Their Fat Content
+
+A boxplot comparing fat content across different cheese types (e.g., fresh, aged).
+
+## Regional Flavor Profiles
+
+A heatmap showing the presence of different flavor descriptors (e.g., nutty, tangy) across regions.
+
+## Correlation Matrix of Quantitative Variables
+
+A correlation plot to explore relationships between variables like fat content, calcium content, and texture score.
