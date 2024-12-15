@@ -1,10 +1,27 @@
-# Data Import and Env Setup
+# Data Import and Environment Setup
 
 ```{r}
 # Variable for storing the main data set
 cheese <- read.csv("./dataset/cheese.csv")
+# Variable for storing color scale
+color_set <- scale_fill_manual(values = c(
+  "#f0f", "#f08", "#f00", "#f80", "#ff0",
+  "#8f0", "#0f0", "#0f8", "#0ff", "#08f",
+  "#00f", "#80f"
+))
+theme_set <- theme(
+  axis.text = element_blank(),
+  axis.title = element_blank(),
+  legend.background = element_rect(fill = "#444"),
+  legend.title = element_text(color = "#999"),
+  legend.text = element_text(color = "#999"),
+  panel.background = element_rect(fill = "#444"),
+  panel.grid = element_blank(),
+  plot.background = element_rect(fill = "#444"),
+  plot.title = element_text(color = "#999")
+)
 # Needed libraries
-libs <- c("tidyverse", "ggplot2")
+libs <- c("tidyverse", "ggplot2", "stringr")
 # Libraries installation
 installed_libs <- libs %in% rownames(installed.packages())
 if (any(installed_libs == FALSE)) {
@@ -13,6 +30,7 @@ if (any(installed_libs == FALSE)) {
 # Libraries loading
 library(tidyverse)
 library(ggplot2)
+library(stringr)
 ```
 
 # Data Overview
@@ -23,12 +41,12 @@ library(ggplot2)
 cheese
 ```
 
-## Cheese Distribution by Country (top 10)
+## Cheese Distribution by Country (top 12 countries)
 
 ```{r}
 # Data preparation
+by_country <- cheese %>%
 ## Filtering out NA values and selecting only columns of interest
-by_country <- cheese %>% 
   filter(!is.na(cheese) & !is.na(country)) %>% 
   select(cheese, country) %>% 
 ## Splitting records for which country column contains multiple values
@@ -37,105 +55,189 @@ by_country <- cheese %>%
   distinct(cheese, country) %>% 
 ## Grouping and counting
   group_by(country) %>% 
-  summarise(count = n()) %>% 
-  arrange(count) %>% 
-  tail(n = 10)
+  summarise(count = n()) %>%
+## Sorting and trimming the data
+  arrange(desc(count)) %>% 
+  head(n = 12)
 
 by_country
 
 # Plot creation
 by_country_plot <- ggplot(
     data = by_country,
-    aes(x = count, y = reorder(country, count), fill = country)
+    aes(x = "", y = count, fill = reorder(country, count))
   ) +
-  geom_col() + 
+  geom_col(color = "#444") + coord_polar(theta = "y") +
   labs(
-    title = "Cheese Distribution by Country (top 10)",
-    x = "Cheese count",
-    y = "Countries",
-    fill = "Countries"
+    title = "Cheese Distribution by Country",
+    fill = "Countries",
   ) + 
-  theme(axis.text.y = element_blank())
+  guides(fill = guide_legend(reverse = TRUE)) +
+  color_set + theme_set +
+  theme(axis.text.x = element_text(color = "#999"))
 
 by_country_plot
 ```
 
-## Cheese Families in USA Regions (top 10)
+## Cheese Families Distribution by USA Regions (top 12 families)
 
 ```{r}
 # Data preparation
+families_by_region <- cheese %>%
 ## Filtering out NA values and selecting only columns of interest
-families_by_region <- cheese %>% 
   filter(!is.na(family) & !is.na(region) & country == "United States") %>% 
   select(family, region) %>% 
-  filter(!is.na(region)) %>% 
   separate_rows(region, sep = ", ") %>% 
   distinct(family, region) %>% 
-  group_by(region) %>% 
+  group_by(family) %>% 
   summarise(count = n()) %>% 
-  tail(n = 10)
+  arrange(desc(count)) %>% 
+  head(n = 12)
 
 families_by_region
 
 # Plot creation
 families_by_region_plot <- ggplot(
-    data = families_by_region,
-    aes(x = reorder(region, -count), y = count, fill = region)
-  ) +
-  geom_col() + 
-  labs(
-    title = "Cheese Families in USA Regions (top 10)",
-    x = "Regions",
-    y = "Family count",
-    fill = "Regions"
-  ) +
-  theme(axis.text.x = element_blank())
+  data = families_by_region,
+  aes(x = reorder(family, -count), y = count, fill = reorder(family, -count))
+) + geom_col() + 
+labs(
+  title = "Cheese Families Distribution by USA Regions",
+  fill = "Families"
+) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
   
 families_by_region_plot
 ```
 
-## Fat Content Distribution (top 10)
+## Cheese Distribution by Fat Content
 
 ```{r}
-#giga_sort <- function(dataset) {
-#  for (elem in dataset) {
-#    if (str_detect(elem, "g")) {
-#      print(elem)
-#    }
-#  }
-#}
-
 # Data preparation
+by_fat_content <- cheese %>%
 ## Filtering out NA values and selecting only columns of interest
-by_fat_content <- cheese %>% 
   filter(!is.na(cheese) & !is.na(fat_content)) %>% 
   select(cheese, fat_content) %>% 
-  #separate_rows(region, sep = ", ") %>% 
-  filter(str_detect(fat_content, "%")) %>% 
   distinct(cheese, fat_content) %>% 
-  arrange(fat_content) %>% 
-  #giga_sort()
-  #group_by(region) %>% 
-  #summarise(count = n()) %>% 
-  tail(n = 10)
+  mutate(
+    fat_content = ifelse(
+      str_detect(fat_content, "g/100g"),
+      str_replace(fat_content, " g/100g", "%"),
+      fat_content
+    )
+  ) %>%
+  filter(!str_detect(fat_content, "-")) %>% 
+  mutate(
+    fat_content = str_remove(fat_content, "%"),
+    fat_content = as.numeric(fat_content)
+  ) %>% 
+  arrange(desc(fat_content))
+
+breaks <- seq(0, ceiling(max(by_fat_content$fat_content) / 7) * 7, by = 7)
+
+by_fat_content <- by_fat_content %>%
+  mutate(fat_content_group = cut(fat_content, breaks = breaks, include.lowest = TRUE, right = FALSE)) %>% 
+  group_by(fat_content_group) %>% 
+  summarise(count = n())
 
 by_fat_content
 
 # Plot creation
 by_fat_content_plot <- ggplot(
     data = by_fat_content,
-    aes(x = cheese, y = fat_content, fill = cheese)
+    aes(x = fat_content_group, y = count, fill = fat_content_group)
   ) +
-  geom_col() + coord_radial(theta = "y")
+  geom_col() + 
   labs(
-    title = "Cheese Families in USA Regions (top 10)",
-    x = "Regions",
-    y = "Family count",
-    fill = "Regions"
+    title = "Cheese Distribution by Fat Content",
+    fill = "Fat Content Range (%)"
   ) +
-  theme(axis.text.x = element_blank())
+  color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
   
 by_fat_content_plot
 ```
 
-## Fat Content Distribution (top 10)
+## Calcium Content vs. Fat Content
+
+A scatter plot to investigate the relationship between calcium content and fat content.
+
+## Cheese Types and Their Fat Content
+
+A boxplot comparing fat content across different cheese types (e.g., fresh, aged).
+
+## Vegetarian vs. Vegan Cheese Availability
+
+A grouped bar chart comparing the number of vegetarian and vegan cheeses.
+
+## Cheese Texture Popularity
+
+A bar plot to visualize the frequency of different textures (e.g., soft, hard, crumbly).
+
+## Flavor Diversity
+
+A word cloud based on the frequency of different flavors listed in the dataset.
+
+## Top 10 Producers by Cheese Count
+
+A bar plot highlighting the top producers and the number of cheeses they offer.
+
+## Regional Flavor Profiles
+
+A heatmap showing the presence of different flavor descriptors (e.g., nutty, tangy) across regions.
+
+## Correlation Matrix of Quantitative Variables
+
+A correlation plot to explore relationships between variables like fat content, calcium content, and texture score.
+
+## Cheese Families Across Countries
+
+A treemap to visualize the distribution of cheese families (e.g., blue, brined) across different countries.
+
+##Seasonal Color Trends If seasonality can be inferred (e.g., seasonal cheeses), use a line plot to show trends in cheese colors over time or seasons.
+
+## Synonyms and Alternative Spellings
+
+A network graph to display relationships between cheese synonyms and alternative spellings.
+
+## Cheese Characteristics Radar Chart
+
+A radar chart (or spider plot) comparing the characteristics (e.g., fat, calcium, texture) of different cheese types.
+
+## Cheese Producers by Country
+
+A faceted bar plot showing the number of producers in each country, with individual facets for each region.
+
+## Milk Type Usage
+
+A stacked bar chart or pie chart displaying the distribution of milk types (e.g., cow, goat, sheep, buffalo) used in cheeses.
+
+## Rind Type by Cheese Family
+
+A grouped bar chart or mosaic plot showing the relationship between rind types (e.g., natural, washed, bloomy) and cheese families.
+
+## Cheese Color Palette
+
+A color palette visualization (e.g., horizontal bars) to showcase the range of cheese colors, possibly sorted by type or family.
+
+## Density of Vegan and Vegetarian Cheeses by Country
+
+A heatmap or geographical map showing the density of vegan/vegetarian cheeses across different countries or regions.
+
+## Flavor-Aroma Relationship
+
+A scatterplot or bubble plot to explore the relationship between flavor descriptors and aroma descriptors.
+
+## Top Cheese Families by Calcium Content
+
+A lollipop chart or dot plot ranking cheese families based on their average calcium content.
+
+## Rare Cheese Types
+
+A Pareto chart to identify cheese types with the lowest frequency in the dataset, providing insights into unique or niche cheeses.
+
+## Synonym Distribution
+
+A bar chart showing the number of synonyms associated with each cheese, helping to identify cheeses with multiple aliases.
+
+## Textural Diversity by Region
+
+A bar chart or boxplot to compare the diversity of textures (e.g., soft, hard, crumbly) across different regions.
