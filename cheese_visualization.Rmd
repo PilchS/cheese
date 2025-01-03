@@ -1,6 +1,17 @@
 # Data Import and Environment Setup
 
 ```{r}
+# Needed libraries
+libs <- c("tidyverse", "ggplot2", "stringr")
+# Libraries installation
+installed_libs <- libs %in% rownames(installed.packages())
+if (any(installed_libs == FALSE)) {
+    install.packages(libs[!installed_libs])
+}
+# Libraries loading
+library(tidyverse)
+library(ggplot2)
+library(stringr)
 # Variable for storing the main data set
 cheese <- read.csv("./dataset/cheese.csv")
 # Variable for storing color scale
@@ -20,43 +31,31 @@ theme_set <- theme(
   plot.background = element_rect(fill = "#444"),
   plot.title = element_text(color = "#999")
 )
-# Needed libraries
-libs <- c("tidyverse", "ggplot2", "stringr")
-# Libraries installation
-installed_libs <- libs %in% rownames(installed.packages())
-if (any(installed_libs == FALSE)) {
-    install.packages(libs[!installed_libs])
-}
-# Libraries loading
-library(tidyverse)
-library(ggplot2)
-library(stringr)
 ```
 
 # Data Overview
 
-## Unfiltered, as it comes within the .csv file
+## Unfiltered
+
+The dataset showcases over a thousand different cheeses from all over the world, distinguishing them by various features like the type of milk that was used in the production process, the country and region of its origin as well as its producer, the family this particular cheese belongs to, fat and calcium contents, purely taste and consistency features like type, texture, rind, color, flavor and aroma, is it vegetarian or vegan and some vocabulary information like synonyms or alternative spellings.
 
 ```{r}
 cheese
 ```
 
-## Cheese Distribution by Country (top 12 countries)
+## Cheese Distribution by Country
+
+This chart represents the cheeses divided into separate countries of origin. It is presented as a top 12 list to make the plot more readable, as there are plenty of countries present in the dataset. Over 1/4 of entries in this dataset originates from Unites States.
 
 ```{r}
 # Data preparation
 by_country <- cheese %>%
-## Filtering out NA values and selecting only columns of interest
   filter(!is.na(cheese) & !is.na(country)) %>% 
   select(cheese, country) %>% 
-## Splitting records for which country column contains multiple values
   separate_rows(country, sep = ", ") %>% 
-## Selecting unique values
   distinct(cheese, country) %>% 
-## Grouping and counting
   group_by(country) %>% 
   summarise(count = n()) %>%
-## Sorting and trimming the data
   arrange(desc(count)) %>% 
   head(n = 12)
 
@@ -69,7 +68,7 @@ by_country_plot <- ggplot(
   ) +
   geom_col(color = "#444") + coord_polar(theta = "y") +
   labs(
-    title = "Cheese Distribution by Country",
+    title = "Cheese Distribution by Country (top 12)",
     fill = "Countries",
   ) + 
   guides(fill = guide_legend(reverse = TRUE)) +
@@ -79,12 +78,13 @@ by_country_plot <- ggplot(
 by_country_plot
 ```
 
-## Cheese Families Distribution by USA Regions (top 12 families)
+## Cheese Families Distribution by USA Regions
+
+This plot is an extension to the previous one, providing more insights to the diversity of cheeses available in the United States. It represents different cheese families that are present in USA regions. Same as previously, it is limited to top 12 families to provide better readability. There are three main families including Cheddar, Blue and Brie cheeses.
 
 ```{r}
 # Data preparation
-families_by_region <- cheese %>%
-## Filtering out NA values and selecting only columns of interest
+families_by_region_usa <- cheese %>%
   filter(!is.na(family) & !is.na(region) & country == "United States") %>% 
   select(family, region) %>% 
   separate_rows(region, sep = ", ") %>% 
@@ -94,27 +94,90 @@ families_by_region <- cheese %>%
   arrange(desc(count)) %>% 
   head(n = 12)
 
-families_by_region
+families_by_region_usa
 
 # Plot creation
-families_by_region_plot <- ggplot(
-  data = families_by_region,
-  aes(x = reorder(family, -count), y = count, fill = reorder(family, -count))
-) + geom_col() + 
-labs(
-  title = "Cheese Families Distribution by USA Regions",
-  fill = "Families"
-) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+families_by_region_usa_plot <- ggplot(
+    data = families_by_region_usa,
+    aes(x = reorder(family, -count), y = count, fill = reorder(family, -count))
+  ) + geom_col() + 
+  labs(
+    title = "Cheese Families Distribution by USA Regions (top 12)",
+    fill = "Families"
+  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
   
-families_by_region_plot
+families_by_region_usa_plot
+```
+
+## Cheese Families Distribution by France Regions
+
+This chart aims to determine whether there are any similarities between the countries that are leading in the cheese market. For this plot we switch to France. Results show that the diversity is much smaller compared to previous outcome but the most common cheese families are Brie, Camembert and Blue, making it very similar to United States podium.
+
+```{r}
+# Data preparation
+families_by_region_france <- cheese %>%
+  filter(!is.na(family) & !is.na(region) & country == "France") %>% 
+  select(family, region) %>% 
+  separate_rows(region, sep = ", ") %>% 
+  distinct(family, region) %>% 
+  group_by(family) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  head(n = 12)
+
+families_by_region_france
+
+# Plot creation
+families_by_region_france_plot <- ggplot(
+    data = families_by_region_france,
+    aes(x = reorder(family, -count), y = count, fill = reorder(family, -count))
+  ) + geom_col() + 
+  labs(
+    title = "Cheese Families Distribution by France Regions",
+    fill = "Families"
+  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  
+families_by_region_france_plot
+```
+
+## Cheese Families Distribution by Italy Regions
+
+To go over at least the half of the available records in the dataset we double check the most popular families, but this time in Italy. The diversity is slightly bigger than in France but still nowhere near USA. However the most common families available in Italy differ when compared to the two previous results. allowing for a statement that different regions around world prefer different cheese families.
+
+```{r}
+# Data preparation
+families_by_region_italy <- cheese %>%
+  filter(!is.na(family) & !is.na(region) & country == "Italy") %>% 
+  select(family, region) %>% 
+  separate_rows(region, sep = ", ") %>% 
+  distinct(family, region) %>% 
+  group_by(family) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  head(n = 12)
+
+families_by_region_italy
+
+# Plot creation
+families_by_region_italy_plot <- ggplot(
+    data = families_by_region_italy,
+    aes(x = reorder(family, -count), y = count, fill = reorder(family, -count))
+  ) + geom_col() + 
+  labs(
+    title = "Cheese Families Distribution by Italy Regions",
+    fill = "Families"
+  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  
+families_by_region_italy_plot
 ```
 
 ## Cheese Distribution by Fat Content
 
+This plot groups cheese based on the fat content, presenting a graphical representation of the products available on the market. Results show that majority of cheeses have their fat content around 40%.
+
 ```{r}
 # Data preparation
 by_fat_content <- cheese %>%
-## Filtering out NA values and selecting only columns of interest
   filter(!is.na(cheese) & !is.na(fat_content)) %>% 
   select(cheese, fat_content) %>% 
   distinct(cheese, fat_content) %>% 
@@ -132,7 +195,7 @@ by_fat_content <- cheese %>%
   ) %>% 
   arrange(desc(fat_content))
 
-breaks <- seq(0, ceiling(max(by_fat_content$fat_content) / 7) * 7, by = 7)
+breaks <- seq(0, ceiling(max(by_fat_content$fat_content) / 6.66) * 6.66, by = 6.66)
 
 by_fat_content <- by_fat_content %>%
   mutate(fat_content_group = cut(fat_content, breaks = breaks, include.lowest = TRUE, right = FALSE)) %>% 
@@ -156,12 +219,53 @@ by_fat_content_plot <- ggplot(
 by_fat_content_plot
 ```
 
-## Calcium Content vs. Fat Content
+## Cheese Distribution by Calcium Content
+
+Similarly to the previous plot this one provides general information on the market available cheeses, but this time it is about average calcium amount. Outcome shows that the pattern of Gaussian distribution is preserved. Most cheeses score between 400 and 500 mg of calcium per 100g of cheese.
 
 ```{r}
 # Data preparation
+by_calcium_content <- cheese %>%
+  filter(!is.na(cheese) & !is.na(calcium_content)) %>% 
+  select(cheese, calcium_content) %>% 
+  distinct(cheese, calcium_content) %>% 
+  filter(!str_detect(calcium_content, "-")) %>% 
+  mutate(
+    calcium_content = str_remove(calcium_content, " mg/100g"),
+    calcium_content = as.numeric(calcium_content)
+  ) %>% 
+  arrange(desc(calcium_content))
+
+breaks <- seq(0, ceiling(max(by_calcium_content$calcium_content) / 100) * 100, by = 100)
+
+by_calcium_content <- by_calcium_content %>%
+  mutate(calcium_content_group = cut(calcium_content, breaks = breaks, include.lowest = TRUE, right = FALSE)) %>% 
+  group_by(calcium_content_group) %>% 
+  summarise(count = n())
+
+by_calcium_content
+
+# Plot creation
+by_calcium_content_plot <- ggplot(
+    data = by_calcium_content,
+    aes(x = calcium_content_group, y = count, fill = calcium_content_group)
+  ) +
+  geom_col() + 
+  labs(
+    title = "Cheese Distribution by Calcium Content",
+    fill = "Calcium Content Range (mg/100g)"
+  ) +
+  color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  
+by_calcium_content_plot
+```
+
+## Calcium Content / Fat Content Dependence
+
+This chart aims to detect the dependence between fat and calcium content of different cheeses. To achieve this we prepared a scatter point plot with a trend line. With the removal of extreme values in the dataset it can be seen that fat and calcium levels are rising linearly up to certain point. After that with even bigger increase in fat, the amounts of calcium start to drop.
+
+```{r}
 calcium_vs_fat <- cheese %>%
-## Filtering out NA values and selecting only columns of interest
   filter(!is.na(cheese) & !is.na(fat_content) & !is.na(calcium_content)) %>% 
   select(cheese, fat_content, calcium_content) %>% 
   distinct(cheese, fat_content, calcium_content) %>% 
@@ -178,7 +282,8 @@ calcium_vs_fat <- cheese %>%
     fat_content = as.numeric(fat_content),
     calcium_content = str_remove(calcium_content, " mg/100g"),
     calcium_content = as.numeric(calcium_content)
-  )
+  ) %>% 
+  filter(calcium_content < 2000)
 
 calcium_vs_fat
 
@@ -188,7 +293,9 @@ calcium_vs_fat_plot <- ggplot(
     aes(x = calcium_content, y = fat_content)
   ) +
   geom_point(color = "#999") +
+  geom_smooth(color = "#666", se = FALSE) +
   labs(
+    title = "Calcium Content / Fat Content Dependence",
     x = "Calcium Content (mg/100g)",
     y = "Fat Content (g/100g)",
   ) +
@@ -196,30 +303,34 @@ calcium_vs_fat_plot <- ggplot(
   theme(
     axis.text = element_text(color = "#999"),
     axis.title = element_text(color = "#999"),
-    panel.grid.minor = element_line(color = "#999", linetype = "dashed")
+    panel.grid.minor = element_line(color = "#666", linetype = "dashed"),
+    panel.grid.major = element_line(color = "#666", linetype = "dashed")
   )
   
 calcium_vs_fat_plot
 ```
 
-## Vegetarian vs. Vegan Cheese Availability
+## Vegetarian and Vegan Cheese Availability
+
+This plot presents the relation between vegan and vegetarian category of cheese. Results show that there are very little vegan cheeses available on the market, but the ratio between regular and vegetarian is close to 1:1 with slight advantage to the regular cheese.
 
 ```{r}
 #Data preparation
 vegetarian_vs_vegan <- cheese %>%
-## Filtering out NA values and selecting only columns of interest
-  filter(!is.na(cheese) & !is.na(vegetarian)) %>%
-  select(cheese, vegetarian) %>%
-## Selecting unique values
-  distinct(cheese, vegetarian) %>%
-## Grouping and counting
-  group_by(vegetarian) %>%
+  filter(!is.na(cheese) & !is.na(vegetarian), !is.na(vegan)) %>%
+  select(cheese, vegetarian, vegan) %>%
+  distinct(cheese, vegetarian, vegan) %>%
+  mutate(group = ifelse(
+    str_detect(vegetarian, "FALSE") & str_detect(vegan, "FALSE"),
+    "Neither",
+    ifelse(
+      str_detect(vegan, "TRUE"),
+      "Vegan",
+      "Vegetarian")
+    )
+  ) %>%
+  group_by(group) %>%
   summarise(count = n()) %>%
-  mutate(vegetarian = ifelse(
-    str_detect(vegetarian, "TRUE"),
-    str_replace(vegetarian, "TRUE", "Vegetarian"),
-    str_replace(vegetarian, "FALSE", "Vegan"))
-  ) %>% 
 ## Sorting the data
   arrange(desc(count))
 
@@ -228,11 +339,11 @@ vegetarian_vs_vegan
 #Plot creation
 vegetarian_vs_vegan_plot <- ggplot(
     data = vegetarian_vs_vegan,
-    aes(x = "", y = count, fill = reorder(vegetarian, count))
+    aes(x = "", y = count, fill = reorder(group, count))
   ) +
   geom_col(color = "#444") + coord_polar(theta = "y") +
   labs(
-    title = "Vegetarian vs Vegan Cheese Availability",
+    title = "Vegetarian and Vegan Cheese Availability",
     fill = "Cheese Type"
   ) +
   theme_set + theme(
@@ -242,183 +353,364 @@ vegetarian_vs_vegan_plot <- ggplot(
 vegetarian_vs_vegan_plot
 ```
 
-## Cheese Texture Popularity (top 12 textures)
+## Cheese Texture Popularity in USA Regions
+
+Starting from this plot we are going to delve deeper into specific countries preferences. This chart focuses on different texture availability in Unites States. ...
 
 ```{r}
 # Data preparation
-by_texture <- cheese %>%
-  filter(!is.na(cheese) & !is.na(texture)) %>%
-  select(cheese, texture) %>% 
-  separate_rows(texture, sep = ", ") %>% 
-  distinct(cheese, texture) %>% 
-  group_by(texture) %>% 
+texture_by_region_usa <- cheese %>%
+  filter(!is.na(texture) & !is.na(region) & country == "United States") %>%
+  select(texture, region) %>%
+  separate_rows(texture, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  distinct(texture, region) %>% 
+  group_by(texture) %>%
   summarise(count = n()) %>%
-  arrange(desc(count)) %>% 
+  arrange(desc(count)) %>%
   head(n = 12)
+
+texture_by_region_usa
+
+# Plot creation
+texture_by_region_usa_plot <- ggplot(
+    data = texture_by_region_usa,
+    aes(x = reorder(texture, -count), y = count, fill = reorder(texture, -count))
+  ) + geom_col() + 
+  labs(
+    title = "Cheese Textures Popularity in USA Regions",
+    fill = "Textures"
+  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
   
-by_texture
-
-# Plot creation
-by_texture_plot <- ggplot(
-  data = by_texture,
-  aes(x = reorder(texture, -count), y = count, fill = reorder(texture, -count))
-) + geom_col() + 
-labs(
-  title = "Cheese Textures Popularity",
-  fill = "Textures"
-) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
-
-by_texture_plot
+texture_by_region_usa_plot
 ```
 
-## Flavor Popularity (top 12 flavors)
+## Cheese Flavor Popularity in USA Regions
 
 ```{r}
 # Data preparation
-by_flavor <- cheese %>%
-  filter(!is.na(cheese) & !is.na(flavor)) %>%
-  select(cheese, flavor) %>% 
-  separate_rows(flavor, sep = ", ") %>% 
-  distinct(cheese, flavor) %>% 
-  group_by(flavor) %>% 
+flavor_by_region_usa <- cheese %>%
+  filter(!is.na(flavor) & !is.na(region) & country == "United States") %>%
+  select(flavor, region) %>%
+  separate_rows(flavor, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  distinct(flavor, region) %>% 
+  group_by(flavor) %>%
   summarise(count = n()) %>%
-  arrange(desc(count)) %>% 
+  arrange(desc(count)) %>%
   head(n = 12)
 
-by_flavor
+flavor_by_region_usa
 
 # Plot creation
-by_flavor_plot <- ggplot(
-  data = by_flavor,
-  aes(x = reorder(flavor, -count), y = count, fill = reorder(flavor, -count))
-) + geom_col() + 
-labs(
-  title = "Cheese Flavors Popularity",
-  fill = "Flavors"
-) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
-
-by_flavor_plot
+flavor_by_region_usa_plot <- ggplot(
+    data = flavor_by_region_usa,
+    aes(x = reorder(flavor, -count), y = count, fill = reorder(flavor, -count))
+  ) + geom_col() + 
+  labs(
+    title = "Cheese Flavor Popularity in USA Regions",
+    fill = "Flavors"
+  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  
+flavor_by_region_usa_plot
 ```
 
-## Top Producers by Cheese Count
+## Top Cheese Producers in USA Regions
 
 ```{r}
 # Data preparation
-by_producers <- cheese %>%
-  filter(!is.na(cheese) & !is.na(producers)) %>%
-  select(cheese, producers) %>% 
-  separate_rows(producers, sep = ", ") %>% 
-  distinct(cheese, producers) %>% 
-  group_by(producers) %>% 
+producers_by_region_usa <- cheese %>%
+  filter(!is.na(producers) & !is.na(region) & country == "United States") %>%
+  select(producers, region) %>%
+  separate_rows(producers, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  distinct(producers, region) %>% 
+  group_by(producers) %>%
   summarise(count = n()) %>%
-  arrange(desc(count)) %>% 
+  arrange(desc(count)) %>%
   head(n = 12)
 
-by_producers
+producers_by_region_usa
 
 # Plot creation
-by_producers_plot <- ggplot(
-  data = by_producers,
-  aes(x = reorder(producers, -count), y = count, fill = reorder(producers, -count))
-) + geom_col() + 
-labs(
-  title = "Top Cheese Producers",
-  fill = "Producers"
-) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
-
-by_producers_plot
+producers_by_region_usa_plot <- ggplot(
+    data = producers_by_region_usa,
+    aes(x = reorder(producers, -count), y = count, fill = reorder(producers, -count))
+  ) + geom_col() + 
+  labs(
+    title = "Top Cheese Producers in USA Regions",
+    fill = "Producers"
+  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  
+producers_by_region_usa_plot
 ```
 
-## Milk Type Usage
+## Milk Type Usage in USA Regions
 
 ```{r}
 # Data preparation
-by_milk <- cheese %>%
-  filter(!is.na(cheese) & !is.na(milk)) %>%
-  select(cheese, milk) %>% 
-  separate_rows(milk, sep = ", ") %>% 
-  distinct(cheese, milk) %>% 
-  group_by(milk) %>% 
+milk_by_region_usa <- cheese %>%
+  filter(!is.na(milk) & !is.na(region) & country == "United States") %>%
+  select(milk, region) %>%
+  separate_rows(milk, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  distinct(milk, region) %>% 
+  group_by(milk) %>%
   summarise(count = n()) %>%
-  arrange(desc(count))
+  arrange(desc(count)) %>%
+  head(n = 12)
 
-by_milk
+milk_by_region_usa
 
 # Plot creation
-by_milk_plot <- ggplot(
-  data = by_milk,
-  aes(x = reorder(milk, -count), y = count, fill = reorder(milk, -count))
-) + geom_col() + 
-labs(
-  title = "Milk Popularity",
-  fill = "Milk Types"
-) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
-
-by_milk_plot
+milk_by_region_usa_plot <- ggplot(
+    data = milk_by_region_usa,
+    aes(x = reorder(milk, -count), y = count, fill = reorder(milk, -count))
+  ) + geom_col() + 
+  labs(
+    title = "Milk Type Usage in USA Regions",
+    fill = "Milk"
+  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  
+milk_by_region_usa_plot
 ```
 
---------------------------------------------------------------------------------------------------------------------
+## Cheese Texture Popularity in France
 
-## Cheese Families Across Countries
+```{r}
+# Data preparation
+texture_by_region_france <- cheese %>%
+  filter(!is.na(texture) & !is.na(region) & country == "France") %>%
+  select(texture, region) %>%
+  separate_rows(texture, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  distinct(texture, region) %>% 
+  group_by(texture) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(n = 12)
 
-A treemap to visualize the distribution of cheese families (e.g., blue, brined) across different countries.
+texture_by_region_france
 
-## Seasonal Color Trends
+# Plot creation
+texture_by_region_france_plot <- ggplot(
+    data = texture_by_region_france,
+    aes(x = reorder(texture, -count), y = count, fill = reorder(texture, -count))
+  ) + geom_col() + 
+  labs(
+    title = "Cheese Textures Popularity in France Regions",
+    fill = "Textures"
+  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  
+texture_by_region_france_plot
+```
 
-If seasonality can be inferred (e.g., seasonal cheeses), use a line plot to show trends in cheese colors over time or seasons.
+## Cheese Flavor Popularity in France
 
-## Synonyms and Alternative Spellings
+```{r}
+# Data preparation
+flavor_by_region_france <- cheese %>%
+  filter(!is.na(flavor) & !is.na(region) & country == "France") %>%
+  select(flavor, region) %>%
+  separate_rows(flavor, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  distinct(flavor, region) %>% 
+  group_by(flavor) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(n = 12)
 
-A network graph to display relationships between cheese synonyms and alternative spellings.
+flavor_by_region_france
 
-## Cheese Characteristics Radar Chart
+# Plot creation
+flavor_by_region_france_plot <- ggplot(
+    data = flavor_by_region_france,
+    aes(x = reorder(flavor, -count), y = count, fill = reorder(flavor, -count))
+  ) + geom_col() + 
+  labs(
+    title = "Cheese Flavor Popularity in France Regions",
+    fill = "Flavors"
+  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  
+flavor_by_region_france_plot
+```
 
-A radar chart (or spider plot) comparing the characteristics (e.g., fat, calcium, texture) of different cheese types.
+## Top Cheese Producers in France
 
-## Cheese Producers by Country
+```{r}
+# Data preparation
+producers_by_region_france <- cheese %>%
+  filter(!is.na(producers) & !is.na(region) & country == "France") %>%
+  select(producers, region) %>%
+  separate_rows(producers, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  distinct(producers, region) %>% 
+  group_by(producers) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(n = 12)
 
-A faceted bar plot showing the number of producers in each country, with individual facets for each region.
+producers_by_region_france
 
-## Rind Type by Cheese Family
+# Plot creation
+producers_by_region_france_plot <- ggplot(
+    data = producers_by_region_france,
+    aes(x = reorder(producers, -count), y = count, fill = reorder(producers, -count))
+  ) + geom_col() + 
+  labs(
+    title = "Top Cheese Producers in France Regions",
+    fill = "Producers"
+  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  
+producers_by_region_france_plot
+```
 
-A grouped bar chart or mosaic plot showing the relationship between rind types (e.g., natural, washed, bloomy) and cheese families.
+## Milk Type Usage in France
 
-## Cheese Color Palette
+```{r}
+# Data preparation
+milk_by_region_france <- cheese %>%
+  filter(!is.na(milk) & !is.na(region) & country == "France") %>%
+  select(milk, region) %>%
+  separate_rows(milk, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  distinct(milk, region) %>% 
+  group_by(milk) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(n = 12)
 
-A color palette visualization (e.g., horizontal bars) to showcase the range of cheese colors, possibly sorted by type or family.
+milk_by_region_france
 
-## Density of Vegan and Vegetarian Cheeses by Country
+# Plot creation
+milk_by_region_france_plot <- ggplot(
+    data = milk_by_region_france,
+    aes(x = reorder(milk, -count), y = count, fill = reorder(milk, -count))
+  ) + geom_col() + 
+  labs(
+    title = "Milk Type Usage in France Regions",
+    fill = "Milk"
+  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  
+milk_by_region_france_plot
+```
 
-A heatmap or geographical map showing the density of vegan/vegetarian cheeses across different countries or regions.
+## Cheese Texture Popularity in Italy
 
-## Flavor-Aroma Relationship
+```{r}
+# Data preparation
+texture_by_region_italy <- cheese %>%
+  filter(!is.na(texture) & !is.na(region) & country == "Italy") %>%
+  select(texture, region) %>%
+  separate_rows(texture, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  distinct(texture, region) %>% 
+  group_by(texture) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(n = 12)
 
-A scatterplot or bubble plot to explore the relationship between flavor descriptors and aroma descriptors.
+texture_by_region_italy
 
-## Top Cheese Families by Calcium Content
+# Plot creation
+texture_by_region_italy_plot <- ggplot(
+    data = texture_by_region_italy,
+    aes(x = reorder(texture, -count), y = count, fill = reorder(texture, -count))
+  ) + geom_col() + 
+  labs(
+    title = "Cheese Textures Popularity in Italy Regions",
+    fill = "Textures"
+  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  
+texture_by_region_italy_plot
+```
 
-A lollipop chart or dot plot ranking cheese families based on their average calcium content.
+## Cheese Flavor Popularity in Italy
 
-## Rare Cheese Types
+```{r}
+# Data preparation
+flavor_by_region_italy <- cheese %>%
+  filter(!is.na(flavor) & !is.na(region) & country == "Italy") %>%
+  select(flavor, region) %>%
+  separate_rows(flavor, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  distinct(flavor, region) %>% 
+  group_by(flavor) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(n = 12)
 
-A Pareto chart to identify cheese types with the lowest frequency in the dataset, providing insights into unique or niche cheeses.
+flavor_by_region_italy
 
-## Synonym Distribution
+# Plot creation
+flavor_by_region_italy_plot <- ggplot(
+    data = flavor_by_region_italy,
+    aes(x = reorder(flavor, -count), y = count, fill = reorder(flavor, -count))
+  ) + geom_col() + 
+  labs(
+    title = "Cheese Flavor Popularity in Italy Regions",
+    fill = "Flavors"
+  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  
+flavor_by_region_italy_plot
+```
 
-A bar chart showing the number of synonyms associated with each cheese, helping to identify cheeses with multiple aliases.
+## Top Cheese Producers in Italy
 
-## Textural Diversity by Region
+```{r}
+# Data preparation
+producers_by_region_italy <- cheese %>%
+  filter(!is.na(producers) & !is.na(region) & country == "Italy") %>%
+  select(producers, region) %>%
+  separate_rows(producers, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  distinct(producers, region) %>% 
+  group_by(producers) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(n = 12)
 
-A bar chart or boxplot to compare the diversity of textures (e.g., soft, hard, crumbly) across different regions.
+producers_by_region_italy
 
-## Cheese Types and Their Fat Content
+# Plot creation
+producers_by_region_italy_plot <- ggplot(
+    data = producers_by_region_italy,
+    aes(x = reorder(producers, -count), y = count, fill = reorder(producers, -count))
+  ) + geom_col() + 
+  labs(
+    title = "Top Cheese Producers in Italy Regions",
+    fill = "Producers"
+  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  
+producers_by_region_italy_plot
+```
 
-A boxplot comparing fat content across different cheese types (e.g., fresh, aged).
+## Milk Type Usage in Italy
 
-## Regional Flavor Profiles
+```{r}
+# Data preparation
+milk_by_region_italy <- cheese %>%
+  filter(!is.na(milk) & !is.na(region) & country == "Italy") %>%
+  select(milk, region) %>%
+  separate_rows(milk, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  distinct(milk, region) %>% 
+  group_by(milk) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(n = 12)
 
-A heatmap showing the presence of different flavor descriptors (e.g., nutty, tangy) across regions.
+milk_by_region_italy
 
-## Correlation Matrix of Quantitative Variables
-
-A correlation plot to explore relationships between variables like fat content, calcium content, and texture score.
+# Plot creation
+milk_by_region_italy_plot <- ggplot(
+    data = milk_by_region_italy,
+    aes(x = reorder(milk, -count), y = count, fill = reorder(milk, -count))
+  ) + geom_col() + 
+  labs(
+    title = "Milk Type Usage in Italy Regions",
+    fill = "Milk"
+  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  
+milk_by_region_italy_plot
+```
