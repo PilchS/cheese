@@ -271,7 +271,7 @@ by_calcium_content_plot
 
 ## Calcium Content / Fat Content Dependence
 
-This chart aims to detect the dependence between fat and calcium content of different cheeses. To achieve this we prepared a scatter point plot with a trend line. With the removal of extreme values in the dataset it can be seen that fat and calcium levels are rising linearly up to certain point. After that with even bigger increase in fat, the amounts of calcium start to drop.
+This chart aims to detect the dependence between fat and calcium content of different cheeses. To achieve this we prepared a scatter point plot with a trend line. With the removal of extreme values in the dataset it can be seen that fat and calcium levels are rising linearly up to certain point. After that with even bigger increase in calcium, the percentage of fat start to drop.
 
 ```{r}
 calcium_vs_fat <- cheese %>%
