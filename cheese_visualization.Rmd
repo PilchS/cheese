@@ -2,7 +2,7 @@
 
 ```{r}
 # Needed libraries
-libs <- c("tidyverse", "ggplot2", "stringr")
+libs <- c("tidyverse", "ggplot2", "stringr", "ggcorrplot")
 # Libraries installation
 installed_libs <- libs %in% rownames(installed.packages())
 if (any(installed_libs == FALSE)) {
@@ -12,6 +12,7 @@ if (any(installed_libs == FALSE)) {
 library(tidyverse)
 library(ggplot2)
 library(stringr)
+library(ggcorrplot)
 # Variable for storing the main data set
 cheese <- read.csv("./dataset/cheese.csv")
 # Variable for storing color scale
@@ -20,10 +21,14 @@ color_set <- scale_fill_manual(values = c(
   "#8f0", "#0f0", "#0f8", "#0ff", "#08f",
   "#00f", "#80f"
 ))
+color_set_2 <- scale_fill_manual(values = c(
+  "#ff0", "#dd0", "#bb0", "#990", "#770",
+  "#550", "#330", "#110"
+))
 theme_set <- theme(
-  axis.text = element_blank(),
-  axis.title = element_blank(),
-  legend.background = element_rect(fill = "#444"),
+  axis.text = element_text(color = "#999"),
+  axis.title = element_text(color = "#999"),
+  legend.background = element_rect(fill = "#333"),
   legend.title = element_text(color = "#999"),
   legend.text = element_text(color = "#999"),
   panel.background = element_rect(fill = "#444"),
@@ -72,13 +77,12 @@ by_country_plot <- ggplot(
     fill = "Countries",
   ) + 
   guides(fill = guide_legend(reverse = TRUE)) +
-  color_set + theme_set +
-  theme(axis.text.x = element_text(color = "#999"))
+  color_set + theme_set + xlab("") + ylab("Number of cheeses")
 
 by_country_plot
 ```
 
-## Cheese Families Distribution by USA Regions
+## Cheese Families Distribution in USA
 
 This plot is an extension to the previous one, providing more insights to the diversity of cheeses available in the United States. It represents different cheese families that are present in USA regions. Same as previously, it is limited to top 12 families to provide better readability. There are three main families including Cheddar, Blue and Brie cheeses.
 
@@ -102,14 +106,15 @@ families_by_region_usa_plot <- ggplot(
     aes(x = reorder(family, -count), y = count, fill = reorder(family, -count))
   ) + geom_col() + 
   labs(
-    title = "Cheese Families Distribution by USA Regions (top 12)",
+    title = "Cheese Families Distribution in USA (top 12)",
     fill = "Families"
-  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  ) + color_set + theme_set + xlab("") + ylab("Number of cheeses") +
+  theme(axis.text.x = element_blank())
   
 families_by_region_usa_plot
 ```
 
-## Cheese Families Distribution by France Regions
+## Cheese Families Distribution in France
 
 This chart aims to determine whether there are any similarities between the countries that are leading in the cheese market. For this plot we switch to France. Results show that the diversity is much smaller compared to previous outcome but the most common cheese families are Brie, Camembert and Blue, making it very similar to United States podium.
 
@@ -133,14 +138,15 @@ families_by_region_france_plot <- ggplot(
     aes(x = reorder(family, -count), y = count, fill = reorder(family, -count))
   ) + geom_col() + 
   labs(
-    title = "Cheese Families Distribution by France Regions",
+    title = "Cheese Families Distribution in France",
     fill = "Families"
-  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  ) + color_set + theme_set + xlab("") + ylab("Number of cheeses") +
+  theme(axis.text.x = element_blank())
   
 families_by_region_france_plot
 ```
 
-## Cheese Families Distribution by Italy Regions
+## Cheese Families Distribution in Italy
 
 To go over at least the half of the available records in the dataset we double check the most popular families, but this time in Italy. The diversity is slightly bigger than in France but still nowhere near USA. However the most common families available in Italy differ when compared to the two previous results. allowing for a statement that different regions around world prefer different cheese families.
 
@@ -164,9 +170,10 @@ families_by_region_italy_plot <- ggplot(
     aes(x = reorder(family, -count), y = count, fill = reorder(family, -count))
   ) + geom_col() + 
   labs(
-    title = "Cheese Families Distribution by Italy Regions",
+    title = "Cheese Families Distribution in Italy",
     fill = "Families"
-  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  ) + color_set + theme_set + xlab("") + ylab("Number of cheeses") +
+  theme(axis.text.x = element_blank())
   
 families_by_region_italy_plot
 ```
@@ -214,7 +221,8 @@ by_fat_content_plot <- ggplot(
     title = "Cheese Distribution by Fat Content",
     fill = "Fat Content Range (%)"
   ) +
-  color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  color_set + theme_set + xlab("Fat Content Groups") + ylab("Number of cheeses") +
+  theme(axis.text.x = element_blank())
   
 by_fat_content_plot
 ```
@@ -254,8 +262,9 @@ by_calcium_content_plot <- ggplot(
   labs(
     title = "Cheese Distribution by Calcium Content",
     fill = "Calcium Content Range (mg/100g)"
-  ) +
-  color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  ) + color_set + theme_set +
+  xlab("Calcium Content Groups") + ylab("Number of cheeses") +
+  theme(axis.text.x = element_blank())
   
 by_calcium_content_plot
 ```
@@ -267,8 +276,8 @@ This chart aims to detect the dependence between fat and calcium content of diff
 ```{r}
 calcium_vs_fat <- cheese %>%
   filter(!is.na(cheese) & !is.na(fat_content) & !is.na(calcium_content)) %>% 
-  select(cheese, fat_content, calcium_content) %>% 
-  distinct(cheese, fat_content, calcium_content) %>% 
+  select(fat_content, calcium_content) %>% 
+  distinct(fat_content, calcium_content) %>% 
   mutate(
     fat_content = ifelse(
       str_detect(fat_content, "%"),
@@ -292,8 +301,8 @@ calcium_vs_fat_plot <- ggplot(
     data = calcium_vs_fat,
     aes(x = calcium_content, y = fat_content)
   ) +
-  geom_point(color = "#999") +
-  geom_smooth(color = "#666", se = FALSE) +
+  geom_point(color = "#999", ) +
+  geom_smooth(color = "#666", se = FALSE, method = "loess") +
   labs(
     title = "Calcium Content / Fat Content Dependence",
     x = "Calcium Content (mg/100g)",
@@ -345,17 +354,14 @@ vegetarian_vs_vegan_plot <- ggplot(
   labs(
     title = "Vegetarian and Vegan Cheese Availability",
     fill = "Cheese Type"
-  ) +
-  theme_set + theme(
-    axis.text.x = element_text(color = "#999")
-  )
+  ) + theme_set + xlab("") + ylab("Number of cheeses")
 
 vegetarian_vs_vegan_plot
 ```
 
-## Cheese Texture Popularity in USA Regions
+Starting from the next plot, we are going to delve deeper into different countries preferences, namely cheese texture, flavor, milk used and producers. To make the charts more interesting, we added division for country regions in the form of stacked bars.
 
-Starting from this plot we are going to delve deeper into specific countries preferences. This chart focuses on different texture availability in Unites States. ...
+## Popular Cheese Textures in United States
 
 ```{r}
 # Data preparation
@@ -364,28 +370,26 @@ texture_by_region_usa <- cheese %>%
   select(texture, region) %>%
   separate_rows(texture, sep = ", ") %>%
   separate_rows(region, sep = ", ") %>%
-  distinct(texture, region) %>% 
-  group_by(texture) %>%
+  group_by(texture, region) %>%
   summarise(count = n()) %>%
-  arrange(desc(count)) %>%
-  head(n = 12)
+  filter(count > 6)
 
 texture_by_region_usa
 
 # Plot creation
 texture_by_region_usa_plot <- ggplot(
     data = texture_by_region_usa,
-    aes(x = reorder(texture, -count), y = count, fill = reorder(texture, -count))
+    aes(x = count, y = reorder(region, desc(region)), fill = texture)
   ) + geom_col() + 
   labs(
-    title = "Cheese Textures Popularity in USA Regions",
+    title = "Popular Cheese Textures in United States",
     fill = "Textures"
-  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  ) + color_set_2 + theme_set + xlab("Number of cheeses") + ylab("Regions")
   
 texture_by_region_usa_plot
 ```
 
-## Cheese Flavor Popularity in USA Regions
+## Popular Cheese Flavors in United States
 
 ```{r}
 # Data preparation
@@ -394,28 +398,26 @@ flavor_by_region_usa <- cheese %>%
   select(flavor, region) %>%
   separate_rows(flavor, sep = ", ") %>%
   separate_rows(region, sep = ", ") %>%
-  distinct(flavor, region) %>% 
-  group_by(flavor) %>%
-  summarise(count = n()) %>%
-  arrange(desc(count)) %>%
-  head(n = 12)
+  group_by(flavor, region) %>%
+  summarise(count = n()) %>% 
+  filter(count > 8)
 
 flavor_by_region_usa
 
 # Plot creation
 flavor_by_region_usa_plot <- ggplot(
     data = flavor_by_region_usa,
-    aes(x = reorder(flavor, -count), y = count, fill = reorder(flavor, -count))
+    aes(x = count, y = reorder(region, desc(region)), fill = flavor)
   ) + geom_col() + 
   labs(
-    title = "Cheese Flavor Popularity in USA Regions",
+    title = "Popular Cheese Flavors in United States",
     fill = "Flavors"
-  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  ) + color_set_2 + theme_set + xlab("Number of cheeses") + ylab("Regions")
   
 flavor_by_region_usa_plot
 ```
 
-## Top Cheese Producers in USA Regions
+## Top Cheese Producers in United States
 
 ```{r}
 # Data preparation
@@ -424,28 +426,26 @@ producers_by_region_usa <- cheese %>%
   select(producers, region) %>%
   separate_rows(producers, sep = ", ") %>%
   separate_rows(region, sep = ", ") %>%
-  distinct(producers, region) %>% 
-  group_by(producers) %>%
+  group_by(producers, region) %>%
   summarise(count = n()) %>%
-  arrange(desc(count)) %>%
-  head(n = 12)
+  filter(count > 7)
 
 producers_by_region_usa
 
 # Plot creation
 producers_by_region_usa_plot <- ggplot(
     data = producers_by_region_usa,
-    aes(x = reorder(producers, -count), y = count, fill = reorder(producers, -count))
+    aes(x = count, y = reorder(region, desc(region)), fill = producers)
   ) + geom_col() + 
   labs(
-    title = "Top Cheese Producers in USA Regions",
+    title = "Top Cheese Producers in United States",
     fill = "Producers"
-  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  ) + color_set_2 + theme_set + xlab("Number of cheeses") + ylab("Regions")
   
 producers_by_region_usa_plot
 ```
 
-## Milk Type Usage in USA Regions
+## Milk Type Popularity in United States
 
 ```{r}
 # Data preparation
@@ -454,28 +454,82 @@ milk_by_region_usa <- cheese %>%
   select(milk, region) %>%
   separate_rows(milk, sep = ", ") %>%
   separate_rows(region, sep = ", ") %>%
-  distinct(milk, region) %>% 
-  group_by(milk) %>%
+  group_by(milk, region) %>%
   summarise(count = n()) %>%
-  arrange(desc(count)) %>%
-  head(n = 12)
+  filter(count > 2)
 
 milk_by_region_usa
 
 # Plot creation
 milk_by_region_usa_plot <- ggplot(
     data = milk_by_region_usa,
-    aes(x = reorder(milk, -count), y = count, fill = reorder(milk, -count))
-  ) + geom_col() + 
+    aes(x = count, y = reorder(region, desc(region)), fill = milk)
+  ) + geom_col() +
   labs(
-    title = "Milk Type Usage in USA Regions",
-    fill = "Milk"
-  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+    title = "Milk Type Popularity in United States",
+    fill = "Milk Type"
+  ) + color_set_2 + theme_set + xlab("Number of cheeses") + ylab("Regions")
   
 milk_by_region_usa_plot
 ```
 
-## Cheese Texture Popularity in France
+## Cheese Colors Popularity in United States
+
+```{r}
+# Data preparation
+color_by_region_usa <- cheese %>%
+  filter(!is.na(color) & !is.na(region) & country == "United States") %>%
+  select(color, region) %>%
+  separate_rows(color, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  group_by(color, region) %>%
+  summarise(count = n()) %>%
+  filter(count > 1)
+
+color_by_region_usa
+
+# Plot creation
+color_by_region_usa_plot <- ggplot(
+    data = color_by_region_usa,
+    aes(x = count, y = reorder(region, desc(region)), fill = color)
+  ) + geom_col() +
+  labs(
+    title = "Cheese Colors Popularity in United States",
+    fill = "Cheese Colors"
+  ) + color_set_2 + theme_set + xlab("Number of cheeses") + ylab("Regions")
+        
+color_by_region_usa_plot
+```
+
+## Cheese Rinds Popularity in United States
+
+```{r}
+# Data preparation
+rind_by_region_usa <- cheese %>%
+  filter(!is.na(rind) & !is.na(region) & country == "United States") %>%
+  select(rind, region) %>%
+  separate_rows(rind, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  group_by(rind, region) %>%
+  summarise(count = n()) %>%
+  filter(count > 1)
+
+rind_by_region_usa
+
+# Plot creation
+rind_by_region_usa_plot <- ggplot(
+    data = rind_by_region_usa,
+    aes(x = count, y = reorder(region, desc(region)), fill = rind)
+  ) + geom_col() +
+  labs(
+    title = "Cheese Rinds Popularity in United States",
+    fill = "Cheese Rinds"
+  ) + color_set_2 + theme_set + xlab("Number of cheeses") + ylab("Regions")
+        
+rind_by_region_usa_plot
+```
+
+## Popular Cheese Textures in France
 
 ```{r}
 # Data preparation
@@ -484,28 +538,28 @@ texture_by_region_france <- cheese %>%
   select(texture, region) %>%
   separate_rows(texture, sep = ", ") %>%
   separate_rows(region, sep = ", ") %>%
-  distinct(texture, region) %>% 
-  group_by(texture) %>%
+  group_by(texture, region) %>%
   summarise(count = n()) %>%
-  arrange(desc(count)) %>%
-  head(n = 12)
+  filter(count > 1)
 
 texture_by_region_france
 
 # Plot creation
 texture_by_region_france_plot <- ggplot(
     data = texture_by_region_france,
-    aes(x = reorder(texture, -count), y = count, fill = reorder(texture, -count))
+    aes(x = count, y = reorder(region, desc(region)), fill = texture)
   ) + geom_col() + 
   labs(
-    title = "Cheese Textures Popularity in France Regions",
+    title = "Popular Cheese Textures in France",
     fill = "Textures"
-  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  ) + color_set_2 + theme_set + xlab("Number of cheeses") + ylab("Regions")
   
 texture_by_region_france_plot
 ```
 
-## Cheese Flavor Popularity in France
+## Popular Cheese Flavors in France
+
+For this plot we had to change the default coloring scale due to the fact that French cheeses are very different in their flavors.
 
 ```{r}
 # Data preparation
@@ -514,28 +568,28 @@ flavor_by_region_france <- cheese %>%
   select(flavor, region) %>%
   separate_rows(flavor, sep = ", ") %>%
   separate_rows(region, sep = ", ") %>%
-  distinct(flavor, region) %>% 
-  group_by(flavor) %>%
-  summarise(count = n()) %>%
-  arrange(desc(count)) %>%
-  head(n = 12)
+  group_by(flavor, region) %>%
+  summarise(count = n()) %>% 
+  filter(count > 1)
 
 flavor_by_region_france
 
 # Plot creation
 flavor_by_region_france_plot <- ggplot(
     data = flavor_by_region_france,
-    aes(x = reorder(flavor, -count), y = count, fill = reorder(flavor, -count))
+    aes(x = count, y = reorder(region, desc(region)), fill = flavor)
   ) + geom_col() + 
   labs(
-    title = "Cheese Flavor Popularity in France Regions",
+    title = "Popular Cheese Flavors in France",
     fill = "Flavors"
-  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  ) + theme_set + xlab("Number of cheeses") + ylab("Regions")
   
 flavor_by_region_france_plot
 ```
 
 ## Top Cheese Producers in France
+
+For this plot we had to discard our own color scheme and trim the results list because the dataset showcases that France has a lot of cheese producers and pretty much every one of them make only one cheese.
 
 ```{r}
 # Data preparation
@@ -544,28 +598,26 @@ producers_by_region_france <- cheese %>%
   select(producers, region) %>%
   separate_rows(producers, sep = ", ") %>%
   separate_rows(region, sep = ", ") %>%
-  distinct(producers, region) %>% 
-  group_by(producers) %>%
-  summarise(count = n()) %>%
-  arrange(desc(count)) %>%
-  head(n = 12)
+  group_by(producers, region) %>%
+  summarise(count = n()) %>% 
+  head(n = 15)
 
 producers_by_region_france
 
 # Plot creation
 producers_by_region_france_plot <- ggplot(
     data = producers_by_region_france,
-    aes(x = reorder(producers, -count), y = count, fill = reorder(producers, -count))
+    aes(x = count, y = reorder(region, desc(region)), fill = producers)
   ) + geom_col() + 
   labs(
-    title = "Top Cheese Producers in France Regions",
+    title = "Top Cheese Producers in France",
     fill = "Producers"
-  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  ) + theme_set + xlab("Number of cheeses") + ylab("Regions")
   
 producers_by_region_france_plot
 ```
 
-## Milk Type Usage in France
+## Milk Type Popularity in France
 
 ```{r}
 # Data preparation
@@ -574,28 +626,84 @@ milk_by_region_france <- cheese %>%
   select(milk, region) %>%
   separate_rows(milk, sep = ", ") %>%
   separate_rows(region, sep = ", ") %>%
-  distinct(milk, region) %>% 
-  group_by(milk) %>%
+  group_by(milk, region) %>%
   summarise(count = n()) %>%
-  arrange(desc(count)) %>%
-  head(n = 12)
+  filter(count > 1)
 
 milk_by_region_france
 
 # Plot creation
 milk_by_region_france_plot <- ggplot(
     data = milk_by_region_france,
-    aes(x = reorder(milk, -count), y = count, fill = reorder(milk, -count))
-  ) + geom_col() + 
+    aes(x = count, y = reorder(region, desc(region)), fill = milk)
+  ) + geom_col() +
   labs(
-    title = "Milk Type Usage in France Regions",
-    fill = "Milk"
-  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+    title = "Milk Type Popularity in France",
+    fill = "Milk Type"
+  ) + color_set_2 + theme_set + xlab("Number of cheeses") + ylab("Regions")
   
 milk_by_region_france_plot
 ```
 
-## Cheese Texture Popularity in Italy
+## Cheese Colors Popularity in France
+
+For this plot we had to again shorten the data output as the dataset presents that France offers a variety of cheese colors changing dependently of the region.
+
+```{r}
+# Data preparation
+color_by_region_france <- cheese %>%
+  filter(!is.na(color) & !is.na(region) & country == "France") %>%
+  select(color, region) %>%
+  separate_rows(color, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  group_by(color, region) %>%
+  summarise(count = n()) %>%
+  head(n = 15)
+
+color_by_region_france
+
+# Plot creation
+color_by_region_france_plot <- ggplot(
+    data = color_by_region_france,
+    aes(x = count, y = reorder(region, desc(region)), fill = color)
+  ) + geom_col() +
+  labs(
+    title = "Cheese Colors Popularity in France",
+    fill = "Cheese Colors"
+  ) + color_set_2 + theme_set + xlab("Number of cheeses") + ylab("Regions")
+        
+color_by_region_france_plot
+```
+
+## Cheese Rinds Popularity in France
+
+```{r}
+# Data preparation
+rind_by_region_france <- cheese %>%
+  filter(!is.na(rind) & !is.na(region) & country == "France") %>%
+  select(rind, region) %>%
+  separate_rows(rind, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  group_by(rind, region) %>%
+  summarise(count = n()) %>%
+  filter(count > 1)
+
+rind_by_region_france
+
+# Plot creation
+rind_by_region_france_plot <- ggplot(
+    data = rind_by_region_france,
+    aes(x = count, y = reorder(region, desc(region)), fill = rind)
+  ) + geom_col() +
+  labs(
+    title = "Cheese Rinds Popularity in France",
+    fill = "Cheese Rinds"
+  ) + color_set_2 + theme_set + xlab("Number of cheeses") + ylab("Regions")
+        
+rind_by_region_france_plot
+```
+
+## Popular Cheese Textures in Italy
 
 ```{r}
 # Data preparation
@@ -604,28 +712,26 @@ texture_by_region_italy <- cheese %>%
   select(texture, region) %>%
   separate_rows(texture, sep = ", ") %>%
   separate_rows(region, sep = ", ") %>%
-  distinct(texture, region) %>% 
-  group_by(texture) %>%
+  group_by(texture, region) %>%
   summarise(count = n()) %>%
-  arrange(desc(count)) %>%
-  head(n = 12)
+  filter(count > 4)
 
 texture_by_region_italy
 
 # Plot creation
 texture_by_region_italy_plot <- ggplot(
     data = texture_by_region_italy,
-    aes(x = reorder(texture, -count), y = count, fill = reorder(texture, -count))
+    aes(x = count, y = reorder(region, desc(region)), fill = texture)
   ) + geom_col() + 
   labs(
-    title = "Cheese Textures Popularity in Italy Regions",
+    title = "Popular Cheese Textures in Italy",
     fill = "Textures"
-  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  ) + color_set_2 + theme_set + xlab("Number of cheeses") + ylab("Regions")
   
 texture_by_region_italy_plot
 ```
 
-## Cheese Flavor Popularity in Italy
+## Popular Cheese Flavors in Italy
 
 ```{r}
 # Data preparation
@@ -634,23 +740,21 @@ flavor_by_region_italy <- cheese %>%
   select(flavor, region) %>%
   separate_rows(flavor, sep = ", ") %>%
   separate_rows(region, sep = ", ") %>%
-  distinct(flavor, region) %>% 
-  group_by(flavor) %>%
-  summarise(count = n()) %>%
-  arrange(desc(count)) %>%
-  head(n = 12)
+  group_by(flavor, region) %>%
+  summarise(count = n()) %>% 
+  filter(count > 4)
 
 flavor_by_region_italy
 
 # Plot creation
 flavor_by_region_italy_plot <- ggplot(
     data = flavor_by_region_italy,
-    aes(x = reorder(flavor, -count), y = count, fill = reorder(flavor, -count))
+    aes(x = count, y = reorder(region, desc(region)), fill = flavor)
   ) + geom_col() + 
   labs(
-    title = "Cheese Flavor Popularity in Italy Regions",
+    title = "Popular Cheese Flavors in Italy",
     fill = "Flavors"
-  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  ) + color_set_2 + theme_set + xlab("Number of cheeses") + ylab("Regions")
   
 flavor_by_region_italy_plot
 ```
@@ -664,28 +768,26 @@ producers_by_region_italy <- cheese %>%
   select(producers, region) %>%
   separate_rows(producers, sep = ", ") %>%
   separate_rows(region, sep = ", ") %>%
-  distinct(producers, region) %>% 
-  group_by(producers) %>%
+  group_by(producers, region) %>%
   summarise(count = n()) %>%
-  arrange(desc(count)) %>%
-  head(n = 12)
+  filter(count > 1)
 
 producers_by_region_italy
 
 # Plot creation
 producers_by_region_italy_plot <- ggplot(
     data = producers_by_region_italy,
-    aes(x = reorder(producers, -count), y = count, fill = reorder(producers, -count))
+    aes(x = count, y = reorder(region, desc(region)), fill = producers)
   ) + geom_col() + 
   labs(
-    title = "Top Cheese Producers in Italy Regions",
+    title = "Top Cheese Producers in Italy",
     fill = "Producers"
-  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
+  ) + color_set_2 + theme_set + xlab("Number of cheeses") + ylab("Regions")
   
 producers_by_region_italy_plot
 ```
 
-## Milk Type Usage in Italy
+## Milk Type Popularity in Italy
 
 ```{r}
 # Data preparation
@@ -694,23 +796,79 @@ milk_by_region_italy <- cheese %>%
   select(milk, region) %>%
   separate_rows(milk, sep = ", ") %>%
   separate_rows(region, sep = ", ") %>%
-  distinct(milk, region) %>% 
-  group_by(milk) %>%
+  group_by(milk, region) %>%
   summarise(count = n()) %>%
-  arrange(desc(count)) %>%
-  head(n = 12)
+  filter(count > 1)
 
 milk_by_region_italy
 
 # Plot creation
 milk_by_region_italy_plot <- ggplot(
     data = milk_by_region_italy,
-    aes(x = reorder(milk, -count), y = count, fill = reorder(milk, -count))
-  ) + geom_col() + 
+    aes(x = count, y = reorder(region, desc(region)), fill = milk)
+  ) + geom_col() +
   labs(
-    title = "Milk Type Usage in Italy Regions",
-    fill = "Milk"
-  ) + color_set + theme_set + theme(axis.text.y = element_text(color = "#999"))
-  
+    title = "Milk Type Popularity in Italy",
+    fill = "Milk Type"
+  ) + color_set_2 + theme_set + xlab("Number of cheeses") + ylab("Regions")
+        
 milk_by_region_italy_plot
 ```
+
+## Cheese Colors Popularity in Italy
+
+```{r}
+# Data preparation
+color_by_region_italy <- cheese %>%
+  filter(!is.na(color) & !is.na(region) & country == "Italy") %>%
+  select(color, region) %>%
+  separate_rows(color, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  group_by(color, region) %>%
+  summarise(count = n()) %>%
+  filter(count > 1)
+
+color_by_region_italy
+
+# Plot creation
+color_by_region_italy_plot <- ggplot(
+    data = color_by_region_italy,
+    aes(x = count, y = reorder(region, desc(region)), fill = color)
+  ) + geom_col() +
+  labs(
+    title = "Cheese Colors Popularity in Italy",
+    fill = "Cheese Colors"
+  ) + color_set_2 + theme_set + xlab("Number of cheeses") + ylab("Regions")
+        
+color_by_region_italy_plot
+```
+
+## Cheese Rinds Popularity in Italy
+
+```{r}
+# Data preparation
+rind_by_region_italy <- cheese %>%
+  filter(!is.na(rind) & !is.na(region) & country == "Italy") %>%
+  select(rind, region) %>%
+  separate_rows(rind, sep = ", ") %>%
+  separate_rows(region, sep = ", ") %>%
+  group_by(rind, region) %>%
+  summarise(count = n()) %>%
+  filter(count > 1)
+
+rind_by_region_italy
+
+# Plot creation
+rind_by_region_italy_plot <- ggplot(
+    data = rind_by_region_italy,
+    aes(x = count, y = reorder(region, desc(region)), fill = rind)
+  ) + geom_col() +
+  labs(
+    title = "Cheese Rinds Popularity in Italy",
+    fill = "Cheese Rinds"
+  ) + color_set_2 + theme_set + xlab("Number of cheeses") + ylab("Regions")
+        
+rind_by_region_italy_plot
+```
+
+Performing this analysis of the regional cheeses details has driven us to the conclusions that United States have the most products to offer, mostly due to the fact of being the largest country investigated in this research. France on the other hand has the most stable distribution of products depending on the region and that is most likely caused by the very large number of cheese producers divided around the country. Italy is an example of a balance between the two previous cases providing decent amounts of different cheeses while also maintaining the regional diversity of products.
